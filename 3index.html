@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PinDrop • Community Map</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBgIQVo9ayowavw1AoKidVqZG85MSnVt8w&libraries=places"></script>
+  <script src="https://unpkg.com/@googlemaps/markerclusterer@2.5.3/dist/index.min.js"></script>
+  <style>
+    #map { height: 100vh; width: 100%; }
+    .modal { animation: fadeIn 0.3s ease; }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  </style>
+</head>
+<body class="bg-zinc-950 text-white dark:bg-white dark:text-zinc-950 transition-colors">
+
+  <!-- Navbar -->
+  <nav class="fixed top-0 left-0 right-0 z-50 bg-white/90 dark:bg-zinc-950/90 backdrop-blur-md border-b border-zinc-200 dark:border-zinc-800">
+    <div class="max-w-screen-2xl mx-auto px-8 py-4 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <span class="text-3xl">📍</span>
+        <h1 class="text-2xl font-bold">PinDrop</h1>
+      </div>
+      <div class="flex-1 max-w-md mx-8">
+        <input id="searchInput" type="text" placeholder="Search pins by description..." 
+               class="w-full bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 rounded-3xl px-6 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-black dark:focus:ring-white">
+      </div>
+      <div class="flex items-center gap-4">
+        <button onclick="toggleTheme()" class="w-10 h-10 flex items-center justify-center rounded-2xl hover:bg-zinc-200 dark:hover:bg-zinc-800 transition">
+          <span id="themeIcon" class="text-xl">☀️</span>
+        </button>
+        <a href="#" onclick="location.reload()" class="text-sm font-medium hover:underline">Refresh Map</a>
+      </div>
+    </div>
+  </nav>
+
+  <div id="map" class="absolute inset-0 pt-16"></div>
+
+  <!-- Floating Buttons -->
+  <div class="fixed bottom-8 right-8 z-50 flex flex-col gap-3 items-end">
+    <button onclick="toggleEarthView()" id="earthBtn" 
+            class="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-7 py-4 rounded-3xl shadow-2xl flex items-center gap-3 text-lg transition-all active:scale-95">
+      <span class="text-3xl">🌍</span>
+      <span id="earthBtnText">Earth View</span>
+    </button>
+    <button onclick="showForm()" 
+            class="bg-black dark:bg-white dark:text-black text-white font-semibold px-8 py-4 rounded-3xl shadow-2xl hover:scale-105 transition flex items-center gap-3 text-lg">
+      <span class="text-2xl">📍</span>
+      Add Your Pin — $1
+    </button>
+  </div>
+
+  <!-- Form Modal -->
+  <div id="formModal" class="hidden fixed inset-0 bg-black/80 flex items-center
