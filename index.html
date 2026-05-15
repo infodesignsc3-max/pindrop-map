@@ -77,13 +77,13 @@
   </div>
 
   <script>
-    // ==================== YOUR SUPABASE CONFIG ====================
+    // ==================== SUPABASE CONFIG ====================
     const supabaseUrl = 'https://uausvultvdpbcpmdqqcy.supabase.co'
     const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVhdXN2dWx0dmRwYmNwbWRxY2N5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NTM2MTAsImV4cCI6MjA5NDQyOTYxMH0.Hozm5Cezuwgb9guo0ZI5r0LIHZrkoWIigERTNhfkWvY'
     const createCheckoutUrl = 'https://uausvultvdpbcpmdqqcy.supabase.co/functions/v1/create-checkout'
 
     const supabase = Supabase.createClient(supabaseUrl, supabaseKey)
-    // ============================================================
+    // =======================================================
 
     let map, pickerMap, clusterer, markersArray = [], selectedLat = null, selectedLng = null
     let isEarthView = true
