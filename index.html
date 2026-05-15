@@ -82,14 +82,12 @@
     const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVhdXN2dWx0dmRwYmNwbWRxY2N5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NTM2MTAsImV4cCI6MjA5NDQyOTYxMH0.Hozm5Cezuwgb9guo0ZI5r0LIHZrkoWIigERTNhfkWvY'
     const createCheckoutUrl = 'https://uausvultvdpbcpmdqqcy.supabase.co/functions/v1/create-checkout'
 
-    // ←←←← THIS LINE WAS MISSING ←←←←
     const supabase = Supabase.createClient(supabaseUrl, supabaseKey)
     // ============================================================
 
     let map, pickerMap, clusterer, markersArray = [], selectedLat = null, selectedLng = null
     let isEarthView = true
 
-    // ... rest of your functions (toggleTheme, toggleEarthView, loadPins, etc.) are correct
     function toggleTheme() {
       document.documentElement.classList.toggle('dark')
       localStorage.theme = document.documentElement.classList.contains('dark') ? 'dark' : 'light'
@@ -155,12 +153,58 @@
       })
     }
 
-    // The rest of your functions (showForm, submitPin, etc.) are fine
-    function showForm() { /* ... your existing code ... */ }
-    function hideForm() { /* ... your existing code ... */ }
-    async function submitPin() { /* ... your existing code ... */ }
-    function hideThankYou() { /* ... your existing code ... */ }
-    function checkSuccess() { /* ... your existing code ... */ }
+    function showForm() {
+      document.getElementById('formModal').classList.remove('hidden')
+      document.getElementById('formModal').classList.add('flex')
+      setTimeout(() => {
+        pickerMap = new google.maps.Map(document.getElementById('pickerMap'), {
+          center: { lat: 39.8283, lng: -98.5795 },
+          zoom: 3,
+          mapTypeId: google.maps.MapTypeId.HYBRID,
+          tilt: 45
+        })
+        pickerMap.addListener('click', (e) => {
+          selectedLat = e.latLng.lat()
+          selectedLng = e.latLng.lng()
+          if (window.currentMarker) window.currentMarker.setMap(null)
+          window.currentMarker = new google.maps.Marker({ position: e.latLng, map: pickerMap })
+        })
+      }, 200)
+    }
+
+    function hideForm() {
+      document.getElementById('formModal').classList.add('hidden')
+      document.getElementById('formModal').classList.remove('flex')
+    }
+
+    async function submitPin() {
+      const file = document.getElementById('imageInput').files[0]
+      if (!file || !selectedLat || !selectedLng) return alert('Please pick a location and upload an image')
+      const fileName = `${Date.now()}-${file.name}`
+      const { data: upload } = await supabase.storage.from('pin-images').upload(fileName, file, { upsert: true })
+      const imageUrl = `${supabaseUrl}/storage/v1/object/public/pin-images/${fileName}`
+      const response = await fetch(createCheckoutUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ lat: selectedLat, lng: selectedLng, image_url: imageUrl, description: document.getElementById('descInput').value, customer_email: document.getElementById('emailInput').value })
+      })
+      const { url } = await response.json()
+      if (url) window.location.href = url
+    }
+
+    function hideThankYou() {
+      document.getElementById('thankYouModal').classList.add('hidden')
+      document.getElementById('thankYouModal').classList.remove('flex')
+      location.search = ''
+    }
+
+    function checkSuccess() {
+      const params = new URLSearchParams(window.location.search)
+      if (params.has('success') || params.has('session_id')) {
+        document.getElementById('thankYouModal').classList.remove('hidden')
+        document.getElementById('thankYouModal').classList.add('flex')
+      }
+    }
 
     window.onload = () => {
       initMap()
