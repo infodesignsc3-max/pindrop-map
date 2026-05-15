@@ -6,125 +6,136 @@
   <title>PinDrop • Community Map</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBgIQVo9ayowavw1AoKidVqZG85MSnVt8w&libraries=places"></script>
+  <script src="https://maps.googleapis.com/maps/api/js?key=YOUR_KEY&libraries=places"></script>
   <script src="https://unpkg.com/@googlemaps/markerclusterer@2.5.3/dist/index.min.js"></script>
+  
   <style>
     #map { height: 100vh; width: 100%; }
-    .modal { animation: fadeIn 0.3s ease; }
-    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    .modal { animation: fadeIn 0.3s ease-out; }
+    @keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
   </style>
 </head>
-<body class="bg-zinc-950 text-white dark:bg-white dark:text-zinc-950 transition-colors">
-
-  <nav class="fixed top-0 left-0 right-0 z-50 bg-white/90 dark:bg-zinc-950/90 backdrop-blur-md border-b border-zinc-200 dark:border-zinc-800">
-    <div class="max-w-screen-2xl mx-auto px-8 py-4 flex items-center justify-between">
+<body class="bg-zinc-950 text-white dark:bg-white dark:text-zinc-950">
+  <!-- Nav -->
+  <nav class="fixed top-0 left-0 right-0 z-50 bg-white/95 dark:bg-zinc-950/95 backdrop-blur-md border-b border-zinc-200 dark:border-zinc-800">
+    <div class="max-w-screen-2xl mx-auto px-6 py-4 flex items-center justify-between">
       <div class="flex items-center gap-3">
-        <span class="text-3xl">📍</span>
-        <h1 class="text-2xl font-bold">PinDrop</h1>
+        <span class="text-4xl">📍</span>
+        <h1 class="text-3xl font-bold tracking-tight">PinDrop</h1>
       </div>
-      <div class="flex-1 max-w-md mx-8">
-        <input id="searchInput" type="text" placeholder="Search pins by description..." 
-               class="w-full bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 rounded-3xl px-6 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-black dark:focus:ring-white">
+      
+      <div class="flex-1 max-w-lg mx-8">
+        <input id="searchInput" type="text" placeholder="Search pins..." 
+               class="w-full bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 rounded-3xl px-6 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
       </div>
+
       <div class="flex items-center gap-4">
-        <button onclick="toggleTheme()" class="w-10 h-10 flex items-center justify-center rounded-2xl hover:bg-zinc-200 dark:hover:bg-zinc-800 transition">
-          <span id="themeIcon" class="text-xl">☀️</span>
+        <button onclick="toggleTheme()" class="w-11 h-11 flex items-center justify-center rounded-2xl hover:bg-zinc-200 dark:hover:bg-zinc-800">
+          <span id="themeIcon" class="text-2xl">☀️</span>
         </button>
-        <a href="#" onclick="location.reload()" class="text-sm font-medium hover:underline">Refresh Map</a>
+        <button onclick="location.reload()" class="text-sm font-medium hover:underline">Refresh</button>
       </div>
     </div>
   </nav>
 
   <div id="map" class="absolute inset-0 pt-16"></div>
 
+  <!-- Floating buttons -->
   <div class="fixed bottom-8 right-8 z-50 flex flex-col gap-3 items-end">
-    <button onclick="toggleEarthView()" id="earthBtn" class="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-7 py-4 rounded-3xl shadow-2xl flex items-center gap-3 text-lg transition-all active:scale-95">
+    <button onclick="toggleEarthView()" id="earthBtn"
+            class="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-7 py-4 rounded-3xl shadow-2xl flex items-center gap-3 text-lg active:scale-95 transition-all">
       <span class="text-3xl">🌍</span>
       <span id="earthBtnText">Earth View</span>
     </button>
-    <button onclick="showForm()" class="bg-black dark:bg-white dark:text-black text-white font-semibold px-8 py-4 rounded-3xl shadow-2xl hover:scale-105 transition flex items-center gap-3 text-lg">
+    
+    <button onclick="showForm()" 
+            class="bg-black dark:bg-white dark:text-black text-white font-semibold px-8 py-4 rounded-3xl shadow-2xl hover:scale-105 transition flex items-center gap-3 text-lg">
       <span class="text-2xl">📍</span>
-      Add Your Pin — $1
+      Drop a Pin — $1
     </button>
   </div>
 
   <!-- Form Modal -->
   <div id="formModal" class="hidden fixed inset-0 bg-black/80 flex items-center justify-center z-[100]">
-    <div class="modal bg-white dark:bg-zinc-900 rounded-3xl max-w-lg w-full mx-4 p-8 text-zinc-950 dark:text-white">
-      <h2 class="text-3xl font-bold mb-6">Drop a pin + photo</h2>
+    <div class="modal bg-white dark:bg-zinc-900 rounded-3xl max-w-md w-full mx-4 p-8">
+      <h2 class="text-3xl font-bold mb-6">Drop your pin</h2>
       <div id="pickerMap" class="h-80 rounded-2xl mb-6 border border-zinc-300 dark:border-zinc-700"></div>
-      <input type="file" id="imageInput" accept="image/*" class="block w-full mb-4 text-sm file:mr-4 file:py-2 file:px-6 file:rounded-2xl file:border-0 file:bg-black file:text-white dark:file:bg-white dark:file:text-black">
-      <textarea id="descInput" rows="3" placeholder="Optional message or story..." class="w-full bg-zinc-100 dark:bg-zinc-800 rounded-2xl p-4 mb-4"></textarea>
-      <input type="email" id="emailInput" placeholder="Your email (optional)" class="w-full bg-zinc-100 dark:bg-zinc-800 rounded-2xl p-4 mb-6">
+      
+      <input type="file" id="imageInput" accept="image/*" class="block w-full mb-4 text-sm">
+      <textarea id="descInput" rows="3" placeholder="What's happening here? (optional)" 
+                class="w-full bg-zinc-100 dark:bg-zinc-800 rounded-2xl p-4 mb-4 resize-y"></textarea>
+      <input type="email" id="emailInput" placeholder="Email (optional, for receipt)" 
+             class="w-full bg-zinc-100 dark:bg-zinc-800 rounded-2xl p-4 mb-6">
+
       <div class="flex gap-4">
-        <button onclick="submitPin()" class="flex-1 bg-black dark:bg-white dark:text-black text-white py-4 rounded-3xl font-semibold hover:bg-emerald-500 transition">Pay $1 & Submit</button>
-        <button onclick="hideForm()" class="flex-1 border border-zinc-400 dark:border-zinc-600 py-4 rounded-3xl font-semibold hover:bg-zinc-100 dark:hover:bg-zinc-800 transition">Cancel</button>
+        <button onclick="submitPin()" 
+                class="flex-1 bg-black dark:bg-white dark:text-black py-4 rounded-3xl font-semibold hover:bg-emerald-500 transition">
+          Pay $1 & Drop Pin
+        </button>
+        <button onclick="hideForm()" 
+                class="flex-1 border border-zinc-400 dark:border-zinc-600 py-4 rounded-3xl font-semibold">
+          Cancel
+        </button>
       </div>
     </div>
   </div>
 
-  <!-- Thank You Modal -->
+  <!-- Thank You -->
   <div id="thankYouModal" class="hidden fixed inset-0 bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center z-[200]">
-    <div class="text-center text-white max-w-md mx-auto px-8">
+    <div class="text-center text-white max-w-md px-8">
       <div class="text-8xl mb-6">🎉</div>
-      <h1 class="text-5xl font-bold mb-3">Thank you!</h1>
-      <p class="text-2xl mb-8">Your pin is now live on the map.</p>
-      <p class="mb-12">It will automatically expire in 30 days.</p>
-      <button onclick="hideThankYou()" class="px-10 py-4 bg-white text-emerald-600 rounded-3xl font-semibold text-xl hover:scale-105 transition">Back to Map</button>
+      <h1 class="text-5xl font-bold mb-3">Pin Dropped!</h1>
+      <p class="text-2xl mb-8">Thanks for contributing to the map.</p>
+      <p class="mb-12 text-lg opacity-90">Your pin will expire in 30 days.</p>
+      <button onclick="hideThankYou()" 
+              class="px-10 py-4 bg-white text-emerald-600 rounded-3xl font-semibold text-xl hover:scale-105 transition">
+        Back to Map
+      </button>
     </div>
   </div>
 
   <script>
-    const supabaseUrl = 'https://uausvultvdpbcpmdqqcy.supabase.co'
-    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVhdXN2dWx0dmRwYmNwbWRxY2N5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NTM2MTAsImV4cCI6MjA5NDQyOTYxMH0.Hozm5Cezuwgb9guo0ZI5r0LIHZrkoWIigERTNhfkWvY'
-    const createCheckoutUrl = 'https://uausvultvdpbcpmdqqcy.supabase.co/functions/v1/create-checkout'
+    // === Config ===
+    const supabaseUrl = 'https://uausvultvdpbcpmdqqcy.supabase.co';
+    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...'; // your key
+    const supabase = Supabase.createClient(supabaseUrl, supabaseKey);
 
-    const supabase = Supabase.createClient(supabaseUrl, supabaseKey)
-
-    let map, pickerMap, clusterer, markersArray = [], selectedLat = null, selectedLng = null
-    let isEarthView = true
-
-    function toggleTheme() {
-      document.documentElement.classList.toggle('dark')
-      localStorage.theme = document.documentElement.classList.contains('dark') ? 'dark' : 'light'
-      document.getElementById('themeIcon').textContent = document.documentElement.classList.contains('dark') ? '☀️' : '🌙'
-    }
-
-    function toggleEarthView() {
-      isEarthView = !isEarthView
-      const btn = document.getElementById('earthBtnText')
-      if (isEarthView) {
-        map.setMapTypeId(google.maps.MapTypeId.HYBRID)
-        map.setTilt(45)
-        btn.textContent = '2D View'
-      } else {
-        map.setMapTypeId(google.maps.MapTypeId.ROADMAP)
-        map.setTilt(0)
-        btn.textContent = 'Earth View'
-      }
-    }
+    let map, pickerMap, clusterer, markersArray = [];
+    let selectedLat = null, selectedLng = null;
+    let isEarthView = true;
 
     async function loadPins() {
-      const thirtyDaysAgo = new Date()
-      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
-      const { data: pins } = await supabase.from('pins').select('*').gte('created_at', thirtyDaysAgo.toISOString())
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
-      if (clusterer) clusterer.clearMarkers()
-      markersArray = []
+      const { data: pins } = await supabase
+        .from('pins')
+        .select('*')
+        .gte('created_at', thirtyDaysAgo.toISOString());
+
+      if (clusterer) clusterer.clearMarkers();
+      markersArray = [];
 
       pins.forEach(pin => {
         const marker = new google.maps.Marker({
           position: { lat: pin.lat, lng: pin.lng },
           animation: google.maps.Animation.DROP
-        })
-        const infoWindow = new google.maps.InfoWindow({
-          content: `<div class="max-w-[260px] p-1"><img src="${pin.image_url}" class="w-full rounded-2xl mb-3"><p class="text-sm">${pin.description || ''}</p></div>`
-        })
-        marker.addListener('click', () => infoWindow.open(map, marker))
-        markersArray.push({ marker, description: (pin.description || '').toLowerCase() })
-      })
+        });
 
-      clusterer = new MarkerClusterer({ map, markers: markersArray.map(m => m.marker) })
+        const infoWindow = new google.maps.InfoWindow({
+          content: `
+            <div class="max-w-[280px]">
+              <img src="${pin.image_url}" class="w-full rounded-2xl mb-3" alt="pin image">
+              <p class="text-sm leading-snug">${pin.description || 'No description'}</p>
+            </div>
+          `
+        });
+
+        marker.addListener('click', () => infoWindow.open(map, marker));
+        markersArray.push({ marker, description: (pin.description || '').toLowerCase() });
+      });
+
+      clusterer = new MarkerClusterer({ map, markers: markersArray.map(m => m.marker) });
     }
 
     function initMap() {
@@ -134,79 +145,133 @@
         mapTypeId: google.maps.MapTypeId.HYBRID,
         tilt: 45,
         mapTypeControl: true,
-        zoomControl: true,
-        rotateControl: true,
         streetViewControl: false
-      })
-      loadPins()
+      });
 
+      loadPins();
+
+      // Search
       document.getElementById('searchInput').addEventListener('input', (e) => {
-        const term = e.target.value.toLowerCase().trim()
-        if (!clusterer) return
-        const visible = markersArray.filter(item => !term || item.description.includes(term)).map(item => item.marker)
-        clusterer.clearMarkers()
-        clusterer.addMarkers(visible)
-      })
+        const term = e.target.value.toLowerCase().trim();
+        if (!clusterer) return;
+
+        const filtered = markersArray
+          .filter(item => !term || item.description.includes(term))
+          .map(item => item.marker);
+
+        clusterer.clearMarkers();
+        clusterer.addMarkers(filtered);
+      });
     }
 
     function showForm() {
-      document.getElementById('formModal').classList.remove('hidden')
-      document.getElementById('formModal').classList.add('flex')
+      document.getElementById('formModal').classList.remove('hidden');
+      document.getElementById('formModal').classList.add('flex');
+
       setTimeout(() => {
         pickerMap = new google.maps.Map(document.getElementById('pickerMap'), {
           center: { lat: 39.8283, lng: -98.5795 },
           zoom: 3,
           mapTypeId: google.maps.MapTypeId.HYBRID,
           tilt: 45
-        })
+        });
+
         pickerMap.addListener('click', (e) => {
-          selectedLat = e.latLng.lat()
-          selectedLng = e.latLng.lng()
-          if (window.currentMarker) window.currentMarker.setMap(null)
-          window.currentMarker = new google.maps.Marker({ position: e.latLng, map: pickerMap })
-        })
-      }, 200)
+          selectedLat = e.latLng.lat();
+          selectedLng = e.latLng.lng();
+
+          if (window.currentMarker) window.currentMarker.setMap(null);
+          window.currentMarker = new google.maps.Marker({
+            position: e.latLng,
+            map: pickerMap,
+            animation: google.maps.Animation.BOUNCE
+          });
+        });
+      }, 100);
     }
 
     function hideForm() {
-      document.getElementById('formModal').classList.add('hidden')
-      document.getElementById('formModal').classList.remove('flex')
+      document.getElementById('formModal').classList.add('hidden');
+      document.getElementById('formModal').classList.remove('flex');
     }
 
     async function submitPin() {
-      const file = document.getElementById('imageInput').files[0]
-      if (!file || !selectedLat || !selectedLng) return alert('Please pick a location and upload an image')
-      const fileName = `${Date.now()}-${file.name}`
-      const { data: upload } = await supabase.storage.from('pin-images').upload(fileName, file, { upsert: true })
-      const imageUrl = `${supabaseUrl}/storage/v1/object/public/pin-images/${fileName}`
-      const response = await fetch(createCheckoutUrl, {
+      const file = document.getElementById('imageInput').files[0];
+      if (!file || !selectedLat || !selectedLng) {
+        alert("Please select a location and upload an image");
+        return;
+      }
+
+      // Upload image
+      const fileName = `${Date.now()}-${file.name}`;
+      const { error: uploadError } = await supabase.storage
+        .from('pin-images')
+        .upload(fileName, file, { upsert: true });
+
+      if (uploadError) return alert("Upload failed");
+
+      const imageUrl = `${supabaseUrl}/storage/v1/object/public/pin-images/${fileName}`;
+
+      // Create checkout
+      const res = await fetch('https://uausvultvdpbcpmdqqcy.supabase.co/functions/v1/create-checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ lat: selectedLat, lng: selectedLng, image_url: imageUrl, description: document.getElementById('descInput').value, customer_email: document.getElementById('emailInput').value })
-      })
-      const { url } = await response.json()
-      if (url) window.location.href = url
+        body: JSON.stringify({
+          lat: selectedLat,
+          lng: selectedLng,
+          image_url: imageUrl,
+          description: document.getElementById('descInput').value.trim(),
+          customer_email: document.getElementById('emailInput').value.trim()
+        })
+      });
+
+      const { url } = await res.json();
+      if (url) window.location.href = url;
+    }
+
+    function toggleEarthView() {
+      isEarthView = !isEarthView;
+      const btn = document.getElementById('earthBtnText');
+      if (isEarthView) {
+        map.setMapTypeId(google.maps.MapTypeId.HYBRID);
+        map.setTilt(45);
+        btn.textContent = '2D View';
+      } else {
+        map.setMapTypeId(google.maps.MapTypeId.ROADMAP);
+        map.setTilt(0);
+        btn.textContent = 'Earth View';
+      }
+    }
+
+    function toggleTheme() {
+      document.documentElement.classList.toggle('dark');
+      const isDark = document.documentElement.classList.contains('dark');
+      document.getElementById('themeIcon').textContent = isDark ? '☀️' : '🌙';
+      localStorage.theme = isDark ? 'dark' : 'light';
     }
 
     function hideThankYou() {
-      document.getElementById('thankYouModal').classList.add('hidden')
-      document.getElementById('thankYouModal').classList.remove('flex')
-      location.search = ''
+      document.getElementById('thankYouModal').classList.add('hidden');
+      document.getElementById('thankYouModal').classList.remove('flex');
+      location.search = '';
+      loadPins(); // Refresh pins after success
     }
 
     function checkSuccess() {
-      const params = new URLSearchParams(window.location.search)
+      const params = new URLSearchParams(window.location.search);
       if (params.has('success') || params.has('session_id')) {
-        document.getElementById('thankYouModal').classList.remove('hidden')
-        document.getElementById('thankYouModal').classList.add('flex')
+        document.getElementById('thankYouModal').classList.remove('hidden');
+        document.getElementById('thankYouModal').classList.add('flex');
       }
     }
 
     window.onload = () => {
-      initMap()
-      checkSuccess()
-      document.getElementById('themeIcon').textContent = document.documentElement.classList.contains('dark') ? '☀️' : '🌙'
-    }
+      initMap();
+      checkSuccess();
+      
+      if (localStorage.theme === 'light') document.documentElement.classList.remove('dark');
+      document.getElementById('themeIcon').textContent = document.documentElement.classList.contains('dark') ? '☀️' : '🌙';
+    };
   </script>
 </body>
 </html>
