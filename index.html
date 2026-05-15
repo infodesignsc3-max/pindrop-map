@@ -16,7 +16,6 @@
 </head>
 <body class="bg-zinc-950 text-white dark:bg-white dark:text-zinc-950 transition-colors">
 
-  <!-- Navbar -->
   <nav class="fixed top-0 left-0 right-0 z-50 bg-white/90 dark:bg-zinc-950/90 backdrop-blur-md border-b border-zinc-200 dark:border-zinc-800">
     <div class="max-w-screen-2xl mx-auto px-8 py-4 flex items-center justify-between">
       <div class="flex items-center gap-3">
@@ -38,7 +37,6 @@
 
   <div id="map" class="absolute inset-0 pt-16"></div>
 
-  <!-- Floating Buttons -->
   <div class="fixed bottom-8 right-8 z-50 flex flex-col gap-3 items-end">
     <button onclick="toggleEarthView()" id="earthBtn" class="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-7 py-4 rounded-3xl shadow-2xl flex items-center gap-3 text-lg transition-all active:scale-95">
       <span class="text-3xl">🌍</span>
@@ -77,13 +75,11 @@
   </div>
 
   <script>
-    // ==================== SUPABASE CONFIG ====================
     const supabaseUrl = 'https://uausvultvdpbcpmdqqcy.supabase.co'
     const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVhdXN2dWx0dmRwYmNwbWRxY2N5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NTM2MTAsImV4cCI6MjA5NDQyOTYxMH0.Hozm5Cezuwgb9guo0ZI5r0LIHZrkoWIigERTNhfkWvY'
     const createCheckoutUrl = 'https://uausvultvdpbcpmdqqcy.supabase.co/functions/v1/create-checkout'
 
     const supabase = Supabase.createClient(supabaseUrl, supabaseKey)
-    // =======================================================
 
     let map, pickerMap, clusterer, markersArray = [], selectedLat = null, selectedLng = null
     let isEarthView = true
