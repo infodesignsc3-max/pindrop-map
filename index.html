@@ -15,6 +15,8 @@
   </style>
 </head>
 <body class="bg-zinc-950 text-white dark:bg-white dark:text-zinc-950 transition-colors">
+
+  <!-- Navbar -->
   <nav class="fixed top-0 left-0 right-0 z-50 bg-white/90 dark:bg-zinc-950/90 backdrop-blur-md border-b border-zinc-200 dark:border-zinc-800">
     <div class="max-w-screen-2xl mx-auto px-8 py-4 flex items-center justify-between">
       <div class="flex items-center gap-3">
@@ -22,7 +24,8 @@
         <h1 class="text-2xl font-bold">PinDrop</h1>
       </div>
       <div class="flex-1 max-w-md mx-8">
-        <input id="searchInput" type="text" placeholder="Search pins by description..." class="w-full bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 rounded-3xl px-6 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-black dark:focus:ring-white">
+        <input id="searchInput" type="text" placeholder="Search pins by description..." 
+               class="w-full bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 rounded-3xl px-6 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-black dark:focus:ring-white">
       </div>
       <div class="flex items-center gap-4">
         <button onclick="toggleTheme()" class="w-10 h-10 flex items-center justify-center rounded-2xl hover:bg-zinc-200 dark:hover:bg-zinc-800 transition">
@@ -35,6 +38,7 @@
 
   <div id="map" class="absolute inset-0 pt-16"></div>
 
+  <!-- Floating Buttons -->
   <div class="fixed bottom-8 right-8 z-50 flex flex-col gap-3 items-end">
     <button onclick="toggleEarthView()" id="earthBtn" class="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-7 py-4 rounded-3xl shadow-2xl flex items-center gap-3 text-lg transition-all active:scale-95">
       <span class="text-3xl">🌍</span>
@@ -72,135 +76,4 @@
     </div>
   </div>
 
-  <script>
-    // === REPLACE THESE 3 LINES WITH YOUR REAL SUPABASE INFO ===
-    const supabaseUrl = 'https://YOUR_SUPABASE_URL.supabase.co'
-    const supabaseKey = 'YOUR_SUPABASE_ANON_KEY'
-    const createCheckoutUrl = 'https://YOUR_SUPABASE_PROJECT.supabase.co/functions/v1/create-checkout'
-
-    let map, pickerMap, clusterer, markersArray = [], selectedLat = null, selectedLng = null
-    let isEarthView = true
-
-    function toggleTheme() {
-      document.documentElement.classList.toggle('dark')
-      localStorage.theme = document.documentElement.classList.contains('dark') ? 'dark' : 'light'
-      document.getElementById('themeIcon').textContent = document.documentElement.classList.contains('dark') ? '☀️' : '🌙'
-    }
-
-    function toggleEarthView() {
-      isEarthView = !isEarthView
-      const btn = document.getElementById('earthBtnText')
-      if (isEarthView) {
-        map.setMapTypeId(google.maps.MapTypeId.HYBRID)
-        map.setTilt(45)
-        btn.textContent = '2D View'
-      } else {
-        map.setMapTypeId(google.maps.MapTypeId.ROADMAP)
-        map.setTilt(0)
-        btn.textContent = 'Earth View'
-      }
-    }
-
-    async function loadPins() {
-      const thirtyDaysAgo = new Date()
-      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
-      const { data: pins } = await supabase.from('pins').select('*').gte('created_at', thirtyDaysAgo.toISOString())
-
-      if (clusterer) clusterer.clearMarkers()
-      markersArray = []
-
-      pins.forEach(pin => {
-        const marker = new google.maps.Marker({ position: { lat: pin.lat, lng: pin.lng }, animation: google.maps.Animation.DROP })
-        const infoWindow = new google.maps.InfoWindow({
-          content: `<div class="max-w-[260px] p-1"><img src="${pin.image_url}" class="w-full rounded-2xl mb-3"><p class="text-sm">${pin.description || ''}</p></div>`
-        })
-        marker.addListener('click', () => infoWindow.open(map, marker))
-        markersArray.push({ marker, description: (pin.description || '').toLowerCase() })
-      })
-
-      clusterer = new MarkerClusterer({ map, markers: markersArray.map(m => m.marker) })
-    }
-
-    function initMap() {
-      map = new google.maps.Map(document.getElementById('map'), {
-        center: { lat: 39.8283, lng: -98.5795 },
-        zoom: 5,
-        mapTypeId: google.maps.MapTypeId.HYBRID,
-        tilt: 45,
-        mapTypeControl: true,
-        zoomControl: true,
-        rotateControl: true,
-        streetViewControl: false
-      })
-      loadPins()
-
-      document.getElementById('searchInput').addEventListener('input', (e) => {
-        const term = e.target.value.toLowerCase().trim()
-        if (!clusterer) return
-        const visible = markersArray.filter(item => !term || item.description.includes(term)).map(item => item.marker)
-        clusterer.clearMarkers()
-        clusterer.addMarkers(visible)
-      })
-    }
-
-    function showForm() {
-      document.getElementById('formModal').classList.remove('hidden')
-      document.getElementById('formModal').classList.add('flex')
-      setTimeout(() => {
-        pickerMap = new google.maps.Map(document.getElementById('pickerMap'), {
-          center: { lat: 39.8283, lng: -98.5795 },
-          zoom: 3,
-          mapTypeId: google.maps.MapTypeId.HYBRID,
-          tilt: 45
-        })
-        pickerMap.addListener('click', (e) => {
-          selectedLat = e.latLng.lat()
-          selectedLng = e.latLng.lng()
-          if (window.currentMarker) window.currentMarker.setMap(null)
-          window.currentMarker = new google.maps.Marker({ position: e.latLng, map: pickerMap })
-        })
-      }, 200)
-    }
-
-    function hideForm() {
-      document.getElementById('formModal').classList.add('hidden')
-      document.getElementById('formModal').classList.remove('flex')
-    }
-
-    async function submitPin() {
-      const file = document.getElementById('imageInput').files[0]
-      if (!file || !selectedLat || !selectedLng) return alert('Please pick a location and upload an image')
-      const fileName = `${Date.now()}-${file.name}`
-      const { data: upload } = await supabase.storage.from('pin-images').upload(fileName, file, { upsert: true })
-      const imageUrl = `${supabaseUrl}/storage/v1/object/public/pin-images/${fileName}`
-      const response = await fetch(createCheckoutUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ lat: selectedLat, lng: selectedLng, image_url: imageUrl, description: document.getElementById('descInput').value, customer_email: document.getElementById('emailInput').value })
-      })
-      const { url } = await response.json()
-      if (url) window.location.href = url
-    }
-
-    function hideThankYou() {
-      document.getElementById('thankYouModal').classList.add('hidden')
-      document.getElementById('thankYouModal').classList.remove('flex')
-      location.search = ''
-    }
-
-    function checkSuccess() {
-      const params = new URLSearchParams(window.location.search)
-      if (params.has('success') || params.has('session_id')) {
-        document.getElementById('thankYouModal').classList.remove('hidden')
-        document.getElementById('thankYouModal').classList.add('flex')
-      }
-    }
-
-    window.onload = () => {
-      initMap()
-      checkSuccess()
-      document.getElementById('themeIcon').textContent = document.documentElement.classList.contains('dark') ? '☀️' : '🌙'
-    }
-  </script>
-</body>
-</html>
+  <script
